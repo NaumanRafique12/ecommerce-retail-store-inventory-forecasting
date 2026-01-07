@@ -1,4 +1,5 @@
 import yaml
+import json
 import os
 import sys
 import pandas as pd
@@ -29,22 +30,27 @@ def training_stage():
     # Train & Save XGBoost
     print("Training XGBoost...")
     xgb_model = train_xgboost(X_train, y_train, config['models']['xgboost'])
-    xgb_mae, _ = evaluate_model(xgb_model, X_test, y_test)
-    print(f"XGBoost MAE: {xgb_mae}")
+    xgb_metrics, _ = evaluate_model(xgb_model, X_test, y_test)
+    print(f"XGBoost Metrics: {xgb_metrics}")
     joblib.dump(xgb_model, "models/xgboost_model.joblib")
 
     # Train & Save LightGBM
     print("Training LightGBM...")
     lgbm_model = train_lightgbm(X_train, y_train, config['models']['lightgbm'])
-    lgbm_mae, _ = evaluate_model(lgbm_model, X_test, y_test)
-    print(f"LightGBM MAE: {lgbm_mae}")
+    lgbm_metrics, _ = evaluate_model(lgbm_model, X_test, y_test)
+    print(f"LightGBM Metrics: {lgbm_metrics}")
     joblib.dump(lgbm_model, "models/lightgbm_model.joblib")
 
-    # Save metrics
-    with open("metrics.yaml", "w") as f:
-        yaml.dump({"xgboost_mae": float(xgb_mae), "lightgbm_mae": float(lgbm_mae)}, f)
+    # Save metrics in JSON
+    all_metrics = {
+        "xgboost": xgb_metrics,
+        "lightgbm": lgbm_metrics
+    }
+    
+    with open("metrics.json", "w") as f:
+        json.dump(all_metrics, f, indent=4)
 
-    print("Models saved to models/ directory.")
+    print("Models and metrics.json saved successfully.")
 
 if __name__ == "__main__":
     training_stage()

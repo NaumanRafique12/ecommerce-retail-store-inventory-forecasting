@@ -27,5 +27,5 @@ stages:
       - models/xgboost_model.joblib
       - models/lightgbm_model.joblib
     metrics:
-      - metrics.yaml:
+      - metrics.json:
           cache: false

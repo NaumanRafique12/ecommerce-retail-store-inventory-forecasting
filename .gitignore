@@ -1,9 +1,26 @@
-﻿Dataset/
-Notebooks/
-ecommerce_venv/
-.ecom_venv/
+# Data & Models (tracked by DVC, ignore in Git)
 data/
 models/
+metrics.json
 metrics.yaml
+metrics.yaml.bak
+dvc.lock
+.dvcignore
 .dvc/
+
+# Virtual Environments
+.ecom_venv/
+ecommerce_venv/
+
+# Environment & Cache
+.env
 __pycache__/
+*.pyc
+
+# Project Specific (Datasets & Notebooks)
+Dataset/
+Notebooks/
+
+# IDE Settings
+.vscode/
+.idea/
