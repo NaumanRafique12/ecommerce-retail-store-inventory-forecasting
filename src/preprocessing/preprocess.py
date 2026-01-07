@@ -1,19 +1,30 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
+def sanitize_columns(df):
+    """Replace whitespaces and special characters in column names."""
+    df.columns = [col.replace(' ', '_').replace('/', '_') for col in df.columns]
+    return df
+
 def handle_dates(df, date_col='Date'):
     """Convert column to datetime and set as index."""
-    df[date_col] = pd.to_datetime(df[date_col])
-    df.set_index(date_col, inplace=True)
+    # After sanitization, 'Date' is likely still 'Date' unless it had spaces.
+    # Be flexible.
+    if date_col not in df.columns and date_col.replace(' ', '_') in df.columns:
+        date_col = date_col.replace(' ', '_')
+    
+    if date_col in df.columns:
+        df[date_col] = pd.to_datetime(df[date_col])
+        df.set_index(date_col, inplace=True)
     return df
 
 def encode_categorical(df):
     """Convert categorical columns to dummy variables."""
-    categorical_cols = df.select_dtypes(include=['object']).columns
-    # Drop IDs before encoding if they are not useful for modeling directly
-    cols_to_drop = [col for col in ['Store ID', 'Product ID'] if col in categorical_cols]
+    # After sanitization, 'Store ID' becomes 'Store_ID'
+    cols_to_drop = [col for col in ['Store_ID', 'Product_ID', 'Store ID', 'Product ID'] if col in df.columns]
     df = df.drop(columns=cols_to_drop)
-    categorical_cols = [c for c in categorical_cols if c not in cols_to_drop]
+    
+    categorical_cols = df.select_dtypes(include=['object']).columns
     df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
     return df
 

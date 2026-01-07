@@ -1,26 +1,22 @@
-# Data & Models (tracked by DVC, ignore in Git)
-data/
-models/
+# Data & Models (Root only)
+/data/
+/models/
 metrics.json
 metrics.yaml
-metrics.yaml.bak
-dvc.lock
 .dvcignore
 .dvc/
 
-# Virtual Environments
+# Environment
 .ecom_venv/
 ecommerce_venv/
-
-# Environment & Cache
 .env
 __pycache__/
 *.pyc
 
-# Project Specific (Datasets & Notebooks)
-Dataset/
-Notebooks/
+# Project Specific
+/Dataset/
+/Notebooks/
 
-# IDE Settings
+# IDEs
 .vscode/
 .idea/

@@ -24,8 +24,14 @@ stages:
       - data/processed/processed.csv
       - config/config.yaml
     outs:
-      - models/xgboost_model.joblib
+      - models/random_forest_model.joblib
       - models/lightgbm_model.joblib
     metrics:
       - metrics.json:
           cache: false
+
+  register:
+    cmd: python src/stages/model_register.py
+    deps:
+      - src/stages/model_register.py
+      - metrics.json
