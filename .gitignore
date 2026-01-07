@@ -1,0 +1,9 @@
+﻿Dataset/
+Notebooks/
+ecommerce_venv/
+.ecom_venv/
+data/
+models/
+metrics.yaml
+.dvc/
+__pycache__/

@@ -1,0 +1,22 @@
+paths:
+  raw_data: "Dataset/retail_store_inventory.csv"
+  processed_dir: "data/processed"
+  raw_snapshots_dir: "data/raw"
+
+preprocessing:
+  normalize: true
+  remove_outliers: true
+
+features:
+  lags: [1, 7, 30]
+  rolling_windows: [7, 30]
+
+models:
+  xgboost:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+  lightgbm:
+    n_estimators: 100
+    num_leaves: 31
+    learning_rate: 0.1

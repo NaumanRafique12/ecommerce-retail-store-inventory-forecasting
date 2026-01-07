@@ -1,0 +1,31 @@
+stages:
+  ingestion:
+    cmd: python src/stages/data_ingestion.py
+    deps:
+      - src/stages/data_ingestion.py
+      - Dataset/retail_store_inventory.csv
+      - config/config.yaml
+    outs:
+      - data/raw/raw.csv
+  
+  preprocessing:
+    cmd: python src/stages/data_preprocessing.py
+    deps:
+      - src/stages/data_preprocessing.py
+      - data/raw/raw.csv
+      - config/config.yaml
+    outs:
+      - data/processed/processed.csv
+
+  train:
+    cmd: python src/stages/model_training.py
+    deps:
+      - src/stages/model_training.py
+      - data/processed/processed.csv
+      - config/config.yaml
+    outs:
+      - models/xgboost_model.joblib
+      - models/lightgbm_model.joblib
+    metrics:
+      - metrics.yaml:
+          cache: false
