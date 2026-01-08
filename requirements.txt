@@ -14,3 +14,7 @@ dagshub
 streamlit
 fastapi
 uvicorn
+httpx
+requests
+pytest
+flake8

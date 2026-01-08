@@ -24,8 +24,12 @@ def wape_scorer(y_true, y_pred):
 def tune_hyperparameters():
     print("--- Hyperparameter Tuning based on WAPE ---")
     
-    # Initialize Dagshub & MLflow
-    dagshub.init(repo_owner='NaumanRafique12', repo_name='ecommerce-retail-store-inventory-forecasting', mlflow=True)
+    # Setup MLflow tracking with token-based auth
+    dagshub_token = os.getenv("ABARK_MLOPS") or os.getenv("DAGSHUB_PAT")
+    if dagshub_token:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+    
     mlflow.set_tracking_uri("https://dagshub.com/NaumanRafique12/ecommerce-retail-store-inventory-forecasting.mlflow")
     mlflow.set_experiment('Demand_Forecasting_WAPE_Tuning')
 

@@ -6,11 +6,24 @@ import pandas as pd
 import joblib
 import mlflow
 import mlflow.sklearn
-import dagshub
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from src.models.traditional_models import train_lightgbm, train_random_forest, train_xgboost, evaluate_model
+from src.models.traditional_models import train_lightgbm, train_xgboost, evaluate_model
+
+def setup_mlflow_tracking():
+    """Setup MLflow tracking with Dagshub using environment variables."""
+    dagshub_token = os.getenv("ABARK_MLOPS") or os.getenv("DAGSHUB_PAT")
+    if dagshub_token:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+        print("Using token-based authentication for Dagshub")
+    
+    dagshub_url = "https://dagshub.com"
+    repo_owner = "NaumanRafique12"
+    repo_name = "ecommerce-retail-store-inventory-forecasting"
+    
+    mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
 
 def training_stage():
     with open("config/config.yaml", "r") as f:
@@ -18,9 +31,8 @@ def training_stage():
 
     print("--- Training Stage ---")
     
-    # Initialize Dagshub & MLflow
-    dagshub.init(repo_owner='NaumanRafique12', repo_name='ecommerce-retail-store-inventory-forecasting', mlflow=True)
-    mlflow.set_tracking_uri("https://dagshub.com/NaumanRafique12/ecommerce-retail-store-inventory-forecasting.mlflow")
+    # Initialize MLflow with token-based auth
+    setup_mlflow_tracking()
     mlflow.set_experiment('Production_Pipeline_Runs')
 
     if not os.path.exists("data/processed/processed.csv"):
@@ -82,24 +94,6 @@ def training_stage():
         
         joblib.dump(lgbm_model, "models/lightgbm_model.joblib")
         all_metrics["lightgbm"] = lgbm_metrics
-
-    # 3. Train & Save Random Forest (OptionalBaseline)
-    print("Training Random Forest...")
-    rf_params = config['models'].get('random_forest', {'n_estimators': 50, 'max_depth': 8})
-    with mlflow.start_run(run_name="RF_Main_Pipeline", nested=True):
-        rf_model = train_random_forest(X_train, y_train, rf_params)
-        rf_metrics, _ = evaluate_model(rf_model, X_test, y_test)
-        
-        mlflow.log_params(rf_params)
-        for m_name, m_val in rf_metrics.items():
-            mlflow.log_metric(m_name, m_val)
-        
-        signature_rf = mlflow.models.infer_signature(X_train, rf_model.predict(X_train))
-        mlflow.sklearn.log_model(rf_model, "random_forest_model", signature=signature_rf)
-        mlflow.set_tag("model_type", "RandomForest")
-
-        joblib.dump(rf_model, "models/random_forest_model.joblib")
-        all_metrics["random_forest"] = rf_metrics
 
     # Save metrics in JSON for DVC tracking
     with open("metrics.json", "w") as f:

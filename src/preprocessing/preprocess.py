@@ -25,7 +25,7 @@ def encode_categorical(df):
     df = df.drop(columns=cols_to_drop)
     
     categorical_cols = df.select_dtypes(include=['object']).columns
-    df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+    df = pd.get_dummies(df, columns=categorical_cols, drop_first=True, dtype=int)
     return df
 
 def normalize_numerical(df):

@@ -32,8 +32,12 @@ async def lifespan(app: FastAPI):
         else:
             print("Warning: models/scaler.joblib not found. Predictions will be in normalized scale.")
 
-        # 2. Init Dagshub & MLflow
-        dagshub.init(repo_owner='NaumanRafique12', repo_name='ecommerce-retail-store-inventory-forecasting', mlflow=True)
+        # 2. Setup MLflow tracking with token-based auth
+        dagshub_token = os.getenv("ABARK_MLOPS") or os.getenv("DAGSHUB_PAT")
+        if dagshub_token:
+            os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+            os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+        
         mlflow.set_tracking_uri("https://dagshub.com/NaumanRafique12/ecommerce-retail-store-inventory-forecasting.mlflow")
         
         # 3. Try loading Production stage

@@ -13,8 +13,12 @@ from src.models.forecaster import generate_multi_horizon_forecast
 def batch_inference_stage():
     print("--- Batch Inference Stage ---")
     
-    # Initialize Dagshub & MLflow to fetch the production model
-    dagshub.init(repo_owner='NaumanRafique12', repo_name='ecommerce-retail-store-inventory-forecasting', mlflow=True)
+    # Setup MLflow tracking with token-based auth
+    dagshub_token = os.getenv("ABARK_MLOPS") or os.getenv("DAGSHUB_PAT")
+    if dagshub_token:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+    
     mlflow.set_tracking_uri("https://dagshub.com/NaumanRafique12/ecommerce-retail-store-inventory-forecasting.mlflow")
     
     model_name = "Ecom_Demand_Forecast_WAPE_Model"

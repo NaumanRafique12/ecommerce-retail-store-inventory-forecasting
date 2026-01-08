@@ -9,8 +9,8 @@ stages:
       size: 6191463
     - path: config/config.yaml
       hash: md5
-      md5: 1e3f4a651281932f82f4aa18c1ff6c78
-      size: 530
+      md5: e9cba5c7520dbbc3fa5e427e8d56d975
+      size: 432
     - path: src/stages/data_ingestion.py
       hash: md5
       md5: 2ccd2d8f98a5cdcdada7399ccae5bd18
@@ -25,49 +25,49 @@ stages:
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: 1e3f4a651281932f82f4aa18c1ff6c78
-      size: 530
+      md5: e9cba5c7520dbbc3fa5e427e8d56d975
+      size: 432
     - path: data/raw/raw.csv
       hash: md5
       md5: 6a0fa7e36e816816814e984eb137f454
       size: 6191463
     - path: src/stages/data_preprocessing.py
       hash: md5
-      md5: 35c6a7b4bc17995d46f8f8176b145dc8
-      size: 1607
+      md5: 11eb76bdf958fbd2204364f9eb9e1933
+      size: 1769
     outs:
     - path: data/processed/processed.csv
       hash: md5
-      md5: 318d8ac7eb0bd497b0468259caedf50d
-      size: 25798985
+      md5: 400274b9a860d0245d79639b3fb6b7e2
+      size: 22269028
   train:
     cmd: python src/stages/model_training.py
     deps:
     - path: config/config.yaml
       hash: md5
-      md5: d44c85b480dbf5887c05c52cce458a4c
-      size: 438
+      md5: e9cba5c7520dbbc3fa5e427e8d56d975
+      size: 432
     - path: data/processed/processed.csv
       hash: md5
-      md5: 318d8ac7eb0bd497b0468259caedf50d
-      size: 25798985
+      md5: 400274b9a860d0245d79639b3fb6b7e2
+      size: 22269028
     - path: src/stages/model_training.py
       hash: md5
-      md5: f8dd9d2e25750eec9b612d0346831f79
-      size: 3798
+      md5: d74057f3ea2d7e364f195fd26ebc8f5a
+      size: 3582
     outs:
     - path: metrics.json
       hash: md5
-      md5: b8c4e8e5da59eb1e7b0ed60c9c3339e2
-      size: 358
+      md5: 401881c3a45962130b6225f0d94ab655
+      size: 351
     - path: models/lightgbm_model.joblib
       hash: md5
       md5: fa2ed18d5106bb21015c2321f588e379
       size: 311349
-    - path: models/random_forest_model.joblib
+    - path: models/xgboost_model.joblib
       hash: md5
-      md5: fa98c88e4d18cd59ed3ef9c976464695
-      size: 5824449
+      md5: 20286d5f03c3c65718c0856726ffd390
+      size: 479870
   tuning:
     cmd: python src/stages/hyperparameter_tuning.py
     deps:
@@ -84,13 +84,64 @@ stages:
       md5: 279e004a08560bc31daca2fac9611f59
       size: 3273
   register:
-    cmd: python src/stages/model_register.py
+    cmd: python src/stages/model_register.py && echo registration_complete > 
+      models/register.done
     deps:
     - path: metrics.json
       hash: md5
-      md5: b8c4e8e5da59eb1e7b0ed60c9c3339e2
-      size: 358
+      md5: 401881c3a45962130b6225f0d94ab655
+      size: 351
     - path: src/stages/model_register.py
       hash: md5
-      md5: 139150a055823038ee9a6f8b38fc0e60
-      size: 3487
+      md5: 7ee670887eb14fd33fecbf3159d6a170
+      size: 3892
+    outs:
+    - path: models/register.done
+      hash: md5
+      md5: 6c59ff51058fb926ec6d11a2bc77cd77
+      size: 24
+  promotion:
+    cmd: python src/stages/model_promotion.py && echo promotion_complete > 
+      models/promotion.done
+    deps:
+    - path: data/processed/processed.csv
+      hash: md5
+      md5: 400274b9a860d0245d79639b3fb6b7e2
+      size: 22269028
+    - path: models/register.done
+      hash: md5
+      md5: 6c59ff51058fb926ec6d11a2bc77cd77
+      size: 24
+    - path: src/stages/model_promotion.py
+      hash: md5
+      md5: a2a02b6af376bcf8ff2f9194de8c8e4f
+      size: 4152
+    outs:
+    - path: models/promotion.done
+      hash: md5
+      md5: 9ce1ccc28eeee7ffdf6a72ff56126ff9
+      size: 21
+  batch_prediction:
+    cmd: python src/stages/batch_inference.py
+    deps:
+    - path: data/processed/processed.csv
+      hash: md5
+      md5: 400274b9a860d0245d79639b3fb6b7e2
+      size: 22269028
+    - path: models/promotion.done
+      hash: md5
+      md5: 9ce1ccc28eeee7ffdf6a72ff56126ff9
+      size: 21
+    - path: src/models/forecaster.py
+      hash: md5
+      md5: 7fc9cb3df1499f52d87a3190eef25975
+      size: 3051
+    - path: src/stages/batch_inference.py
+      hash: md5
+      md5: 2284c22881644a012e3d6fb671aca092
+      size: 2374
+    outs:
+    - path: data/forecasts/batch_results.json
+      hash: md5
+      md5: 60be9cf8ada9ad2bea4d078a9783d6d5
+      size: 1670

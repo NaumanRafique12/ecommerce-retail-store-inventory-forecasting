@@ -26,16 +26,26 @@ stages:
     outs:
       - models/xgboost_model.joblib
       - models/lightgbm_model.joblib
-      - models/random_forest_model.joblib
     metrics:
       - metrics.json:
           cache: false
 
   register:
-    cmd: python src/stages/model_register.py
+    cmd: python src/stages/model_register.py && echo registration_complete > models/register.done
     deps:
       - src/stages/model_register.py
       - metrics.json
+    outs:
+      - models/register.done
+
+  promotion:
+    cmd: python src/stages/model_promotion.py && echo promotion_complete > models/promotion.done
+    deps:
+      - src/stages/model_promotion.py
+      - data/processed/processed.csv
+      - models/register.done
+    outs:
+      - models/promotion.done
 
   batch_prediction:
     cmd: python src/stages/batch_inference.py
@@ -43,6 +53,6 @@ stages:
       - src/stages/batch_inference.py
       - src/models/forecaster.py
       - data/processed/processed.csv
-      - register
+      - models/promotion.done
     outs:
       - data/forecasts/batch_results.json

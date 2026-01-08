@@ -1,19 +1,8 @@
-from sklearn.ensemble import RandomForestRegressor
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import numpy as np
 import sys
-
-def train_random_forest(X_train, y_train, params):
-    """Train Random Forest model."""
-    print(f"Starting Random Forest training (n_jobs={params.get('n_jobs', 1)})...")
-    sys.stdout.flush()
-    model = RandomForestRegressor(**params, random_state=42, verbose=1)
-    model.fit(X_train, y_train)
-    print("Random Forest training complete.")
-    sys.stdout.flush()
-    return model
 
 def train_lightgbm(X_train, y_train, params):
     """Train LightGBM model."""

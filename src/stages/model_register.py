@@ -24,8 +24,12 @@ def get_production_model_wape(client, model_name):
 def register_model():
     print("--- Model Registration Stage with Quality Gate (WAPE) ---")
     
-    # Initialize Dagshub & MLflow
-    dagshub.init(repo_owner='NaumanRafique12', repo_name='ecommerce-retail-store-inventory-forecasting', mlflow=True)
+    # Setup MLflow tracking with token-based auth
+    dagshub_token = os.getenv("ABARK_MLOPS") or os.getenv("DAGSHUB_PAT")
+    if dagshub_token:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+    
     mlflow.set_tracking_uri("https://dagshub.com/NaumanRafique12/ecommerce-retail-store-inventory-forecasting.mlflow")
     
     client = MlflowClient()
@@ -56,18 +60,24 @@ def register_model():
         print(f"Quality Gate Passed: New WAPE ({new_wape}) is better than Current WAPE ({current_production_wape}).")
         
         model_type = best_new_run.data.tags.get("model_type", "model")
-        model_artifact_path = "lightgbm_model" if "LightGBM" in model_type else "random_forest_model"
+        if "XGBoost" in model_type:
+            model_artifact_path = "xgboost_model"
+        elif "LightGBM" in model_type:
+            model_artifact_path = "lightgbm_model"
+        else:
+            model_artifact_path = "model"
+            
         model_uri = f"runs:/{run_id}/{model_artifact_path}"
         
         # Register the model
         result = mlflow.register_model(model_uri, model_name)
         
-        # Promote to Production
+        # Promote to Staging for validation
         client.transition_model_version_stage(
             name=model_name,
             version=result.version,
-            stage="Production",
-            archive_existing_versions=True
+            stage="Staging",
+            archive_existing_versions=False
         )
         
         # Add metadata
