@@ -4,7 +4,6 @@
 metrics.json
 metrics.yaml
 .dvcignore
-.dvc/
 
 # Environment
 .ecom_venv/
