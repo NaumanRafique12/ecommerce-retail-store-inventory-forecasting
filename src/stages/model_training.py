@@ -10,7 +10,7 @@ import dagshub
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from src.models.traditional_models import train_lightgbm, train_random_forest, evaluate_model
+from src.models.traditional_models import train_lightgbm, train_random_forest, train_xgboost, evaluate_model
 
 def training_stage():
     with open("config/config.yaml", "r") as f:
@@ -33,7 +33,7 @@ def training_stage():
     if target_col not in df.columns:
         target_col = 'Units Sold'
 
-    # Split data
+    # Split data (Temporal split is better for time series context)
     train_size = int(len(df) * 0.8)
     train, test = df[:train_size], df[train_size:]
     
@@ -47,37 +47,49 @@ def training_stage():
     # Dictionary to hold metrics for JSON
     all_metrics = {}
 
-    # 1. Train & Save LightGBM
+    # 1. Train & Save XGBoost
+    print("Training XGBoost...")
+    xgb_params = config['models'].get('xgboost', {'n_estimators': 100, 'max_depth': 6})
+    with mlflow.start_run(run_name="XGB_Main_Pipeline", nested=True):
+        xgb_model = train_xgboost(X_train, y_train, xgb_params)
+        xgb_metrics, _ = evaluate_model(xgb_model, X_test, y_test)
+        
+        mlflow.log_params(xgb_params)
+        for m_name, m_val in xgb_metrics.items():
+            mlflow.log_metric(m_name, m_val)
+        
+        signature = mlflow.models.infer_signature(X_train, xgb_model.predict(X_train))
+        mlflow.sklearn.log_model(xgb_model, "xgboost_model", signature=signature)
+        mlflow.set_tag("model_type", "XGBoost")
+        
+        joblib.dump(xgb_model, "models/xgboost_model.joblib")
+        all_metrics["xgboost"] = xgb_metrics
+
+    # 2. Train & Save LightGBM
     print("Training LightGBM...")
     lgbm_params = config['models'].get('lightgbm', {'n_estimators': 100, 'num_leaves': 31})
-    
-    with mlflow.start_run(run_name="LGBM_Main_Pipeline"):
+    with mlflow.start_run(run_name="LGBM_Main_Pipeline", nested=True):
         lgbm_model = train_lightgbm(X_train, y_train, lgbm_params)
         lgbm_metrics, _ = evaluate_model(lgbm_model, X_test, y_test)
         
-        # Log to MLflow
         mlflow.log_params(lgbm_params)
         for m_name, m_val in lgbm_metrics.items():
             mlflow.log_metric(m_name, m_val)
         
-        signature = mlflow.models.infer_signature(X_train, lgbm_model.predict(X_train))
-        mlflow.sklearn.log_model(lgbm_model, "lightgbm_model", signature=signature)
+        signature_lgbm = mlflow.models.infer_signature(X_train, lgbm_model.predict(X_train))
+        mlflow.sklearn.log_model(lgbm_model, "lightgbm_model", signature=signature_lgbm)
         mlflow.set_tag("model_type", "LightGBM")
-        mlflow.set_tag("stage", "production")
         
-        print(f"LightGBM Metrics: {lgbm_metrics}")
         joblib.dump(lgbm_model, "models/lightgbm_model.joblib")
         all_metrics["lightgbm"] = lgbm_metrics
 
-    # 2. Train & Save Random Forest
+    # 3. Train & Save Random Forest (OptionalBaseline)
     print("Training Random Forest...")
-    rf_params = config['models'].get('random_forest', {'n_estimators': 100, 'max_depth': 20})
-    
-    with mlflow.start_run(run_name="RF_Main_Pipeline"):
+    rf_params = config['models'].get('random_forest', {'n_estimators': 50, 'max_depth': 8})
+    with mlflow.start_run(run_name="RF_Main_Pipeline", nested=True):
         rf_model = train_random_forest(X_train, y_train, rf_params)
         rf_metrics, _ = evaluate_model(rf_model, X_test, y_test)
         
-        # Log to MLflow
         mlflow.log_params(rf_params)
         for m_name, m_val in rf_metrics.items():
             mlflow.log_metric(m_name, m_val)
@@ -85,9 +97,7 @@ def training_stage():
         signature_rf = mlflow.models.infer_signature(X_train, rf_model.predict(X_train))
         mlflow.sklearn.log_model(rf_model, "random_forest_model", signature=signature_rf)
         mlflow.set_tag("model_type", "RandomForest")
-        mlflow.set_tag("stage", "production")
 
-        print(f"Random Forest Metrics: {rf_metrics}")
         joblib.dump(rf_model, "models/random_forest_model.joblib")
         all_metrics["random_forest"] = rf_metrics
 

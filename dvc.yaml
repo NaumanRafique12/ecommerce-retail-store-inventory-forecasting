@@ -24,8 +24,9 @@ stages:
       - data/processed/processed.csv
       - config/config.yaml
     outs:
-      - models/random_forest_model.joblib
+      - models/xgboost_model.joblib
       - models/lightgbm_model.joblib
+      - models/random_forest_model.joblib
     metrics:
       - metrics.json:
           cache: false
@@ -35,3 +36,13 @@ stages:
     deps:
       - src/stages/model_register.py
       - metrics.json
+
+  batch_prediction:
+    cmd: python src/stages/batch_inference.py
+    deps:
+      - src/stages/batch_inference.py
+      - src/models/forecaster.py
+      - data/processed/processed.csv
+      - register
+    outs:
+      - data/forecasts/batch_results.json

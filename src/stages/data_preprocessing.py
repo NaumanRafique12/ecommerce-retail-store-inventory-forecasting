@@ -28,7 +28,12 @@ def preprocess_stage():
     df = remove_outliers(df, outlier_cols)
     
     df = encode_categorical(df)
-    df, _ = normalize_numerical(df)
+    df, scaler = normalize_numerical(df)
+    
+    # Save scaler for inverse transform
+    os.makedirs("models", exist_ok=True)
+    import joblib
+    joblib.dump(scaler, "models/scaler.joblib")
 
     # 3. Feature Engineering
     # Feature engineering will also need to handle sanitized names
