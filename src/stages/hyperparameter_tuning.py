@@ -4,13 +4,12 @@ import sys
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import make_scorer, mean_absolute_error
+from sklearn.metrics import make_scorer
 import lightgbm as lgb
+import xgboost as xgb
 import mlflow
 import mlflow.sklearn
 import mlflow.data
-import dagshub
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -67,7 +66,37 @@ def tune_hyperparameters():
     # Safe n_jobs for Windows
     SAFE_N_JOBS = 2
 
-    # 1. Tuning LightGBM
+    # 1. Tuning XGBoost
+    print("\nTuning XGBoost (Refit on WAPE)...")
+    xgb_param_grid = {
+        'n_estimators': [50, 100],
+        'max_depth': [4, 6],
+        'learning_rate': [0.01, 0.1]
+    }
+    xgb_model = xgb.XGBRegressor(random_state=42, n_jobs=SAFE_N_JOBS)
+    grid_xgb = GridSearchCV(xgb_model, xgb_param_grid, cv=3, scoring=scoring, refit='WAPE', n_jobs=SAFE_N_JOBS)
+
+    with mlflow.start_run(run_name="XGBoost_WAPE_GridSearch") as parent:
+        grid_xgb.fit(X_train, y_train)
+
+        for i in range(len(grid_xgb.cv_results_['params'])):
+            with mlflow.start_run(run_name=f"XGB_Trial_{i}", nested=True):
+                mlflow.log_params(grid_xgb.cv_results_['params'][i])
+                mlflow.log_metric("MAE", -grid_xgb.cv_results_['mean_test_MAE'][i])
+                mlflow.log_metric("WAPE", -grid_xgb.cv_results_['mean_test_WAPE'][i])
+                mlflow.set_tag("model_type", "XGBoost")
+        
+        # Log best model in parent
+        best_metrics_xgb, _ = calculate_metrics(y_test, grid_xgb.best_estimator_.predict(X_test))
+        mlflow.log_params(grid_xgb.best_params_)
+        for m_name, m_val in best_metrics_xgb.items():
+            mlflow.log_metric(m_name, m_val)
+        
+        signature_xgb = mlflow.models.infer_signature(X_train, grid_xgb.best_estimator_.predict(X_train))
+        mlflow.sklearn.log_model(grid_xgb.best_estimator_, "xgboost_model", signature=signature_xgb)
+        mlflow.set_tag("author", "Nauman")
+
+    # 2. Tuning LightGBM
     print("\nTuning LightGBM (Refit on WAPE)...")
     lgbm_param_grid = {
         'n_estimators': [50, 100],
@@ -97,36 +126,7 @@ def tune_hyperparameters():
         mlflow.sklearn.log_model(grid_lgbm.best_estimator_, "lightgbm_model", signature=signature)
         mlflow.set_tag("author", "Nauman")
 
-    # 2. Tuning Random Forest
-    print("\nTuning Random Forest (Refit on WAPE)...")
-    rf_param_grid = {
-        'n_estimators': [50, 100],
-        'max_depth': [10, 20]
-    }
-    rf = RandomForestRegressor(random_state=42, n_jobs=1)
-    grid_rf = GridSearchCV(rf, rf_param_grid, cv=3, scoring=scoring, refit='WAPE', n_jobs=SAFE_N_JOBS)
-
-    with mlflow.start_run(run_name="RandomForest_WAPE_GridSearch") as parent:
-        grid_rf.fit(X_train, y_train)
-
-        for i in range(len(grid_rf.cv_results_['params'])):
-            with mlflow.start_run(run_name=f"RF_Trial_{i}", nested=True):
-                mlflow.log_params(grid_rf.cv_results_['params'][i])
-                mlflow.log_metric("MAE", -grid_rf.cv_results_['mean_test_MAE'][i])
-                mlflow.log_metric("WAPE", -grid_rf.cv_results_['mean_test_WAPE'][i])
-                mlflow.set_tag("model_type", "RandomForest")
-
-        # Log best model in parent
-        best_metrics_rf, _ = calculate_metrics(y_test, grid_rf.best_estimator_.predict(X_test))
-        mlflow.log_params(grid_rf.best_params_)
-        for m_name, m_val in best_metrics_rf.items():
-            mlflow.log_metric(m_name, m_val)
-            
-        signature_rf = mlflow.models.infer_signature(X_train, grid_rf.best_estimator_.predict(X_train))
-        mlflow.sklearn.log_model(grid_rf.best_estimator_, "random_forest_model", signature=signature_rf)
-        mlflow.set_tag("author", "Nauman")
-
-    print("\nTuning complete. Selection now focused on WAPE.")
+    print("\nHyperparameter tuning complete for XGBoost and LightGBM (WAPE-optimized).")
 
 if __name__ == "__main__":
     tune_hyperparameters()

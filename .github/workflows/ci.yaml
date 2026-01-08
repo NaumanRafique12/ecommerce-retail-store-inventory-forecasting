@@ -60,5 +60,5 @@ jobs:
 
     - name: Validate DVC Pipeline
       run: |
-        dvc dag --dot > /dev/null
+        dvc dag
         echo "DVC Pipeline DAG is valid."
