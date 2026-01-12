@@ -8,7 +8,6 @@ xgboost
 lightgbm
 pyyaml
 dvc
-dvc-s3
 joblib
 mlflow==2.11.0
 dagshub

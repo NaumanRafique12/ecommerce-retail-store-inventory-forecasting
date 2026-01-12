@@ -90,16 +90,13 @@ def promote_model():
     else:
         if not validation_passed:
             print("FAILURE: Staging model failed validation smoke tests.")
+            print(f"Action: Model Version {staging_v.version} will REMAIN in Staging for debugging.")
         else:
             print(f"SKIPPED: Staging WAPE ({staging_wape}) is not better than Production WAPE ({prod_wape}).")
+            print(f"Action: Model Version {staging_v.version} will REMAIN in Staging.")
         
-        # Optionally archive the failed staging version
-        print(f"Archiving Staging Version {staging_v.version}...")
-        client.transition_model_version_stage(
-            name=model_name,
-            version=staging_v.version,
-            stage="Archived"
-        )
+        # Do NOT archive. Keep in Staging as requested.
+        print("Note: No transition to 'Archived' performed.")
 
 if __name__ == "__main__":
     promote_model()

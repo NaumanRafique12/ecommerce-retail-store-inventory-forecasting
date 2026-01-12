@@ -62,3 +62,39 @@ jobs:
       run: |
         dvc dag
         echo "DVC Pipeline DAG is valid."
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Pull Data from DVC (S3)
+      run: |
+        dvc remote add -d -f s3remote s3://ecomerces3bucket
+        dvc remote modify s3remote region us-east-1
+        dvc pull data/processed/processed.csv models/scaler.joblib
+
+    - name: Login to AWS ECR
+      if: success()
+      run: |
+        aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 490004640299.dkr.ecr.eu-north-1.amazonaws.com
+
+    - name: Build Docker image
+      if: success()
+      run: |
+        docker build -t ecommerce_ecr .
+
+    - name: Tag Docker image
+      if: success()
+      run: |
+        docker tag ecommerce_ecr:latest 490004640299.dkr.ecr.eu-north-1.amazonaws.com/ecommerce_ecr:latest
+
+    - name: Push Docker image to AWS ECR
+      if: success()
+      run: |
+        docker push 490004640299.dkr.ecr.eu-north-1.amazonaws.com/ecommerce_ecr:latest
+    

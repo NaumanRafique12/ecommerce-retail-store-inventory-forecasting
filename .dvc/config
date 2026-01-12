@@ -1,0 +1,7 @@
+[core]
+    remote = dvcstore
+['remote "s3remote"']
+    url = s3://ecomerces3bucket
+['remote "dvcstore"']
+    url = s3://ecomerces3bucket
+    region = us-east-1

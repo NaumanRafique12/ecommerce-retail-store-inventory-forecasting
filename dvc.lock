@@ -53,8 +53,8 @@ stages:
       size: 22269028
     - path: src/stages/model_training.py
       hash: md5
-      md5: d74057f3ea2d7e364f195fd26ebc8f5a
-      size: 3582
+      md5: 59d031f4fbf31585ee4f8ab89bd22d91
+      size: 3995
     outs:
     - path: metrics.json
       hash: md5
@@ -93,8 +93,8 @@ stages:
       size: 351
     - path: src/stages/model_register.py
       hash: md5
-      md5: 7ee670887eb14fd33fecbf3159d6a170
-      size: 3892
+      md5: 05c9e83e3a9b37e4f7e79120849d1ebd
+      size: 4020
     outs:
     - path: models/register.done
       hash: md5
@@ -114,8 +114,8 @@ stages:
       size: 24
     - path: src/stages/model_promotion.py
       hash: md5
-      md5: a2a02b6af376bcf8ff2f9194de8c8e4f
-      size: 4152
+      md5: 0477b1281150c0fc96d7aaedb83b236f
+      size: 4280
     outs:
     - path: models/promotion.done
       hash: md5
@@ -138,8 +138,8 @@ stages:
       size: 3051
     - path: src/stages/batch_inference.py
       hash: md5
-      md5: 2284c22881644a012e3d6fb671aca092
-      size: 2374
+      md5: 108e521c1c2a1110330ba0092a8c411e
+      size: 2472
     outs:
     - path: data/forecasts/batch_results.json
       hash: md5

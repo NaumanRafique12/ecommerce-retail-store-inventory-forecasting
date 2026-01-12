@@ -13,7 +13,6 @@ __pycache__/
 *.pyc
 
 # Project Specific
-/Dataset/
 /Notebooks/
 
 # IDEs
