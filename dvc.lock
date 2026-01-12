@@ -40,6 +40,10 @@ stages:
       hash: md5
       md5: 400274b9a860d0245d79639b3fb6b7e2
       size: 22269028
+    - path: models/scaler.joblib
+      hash: md5
+      md5: 10eae9947b836a85bdbeceeb2ea7d2d6
+      size: 1367
   train:
     cmd: python src/stages/model_training.py
     deps:
@@ -114,8 +118,8 @@ stages:
       size: 24
     - path: src/stages/model_promotion.py
       hash: md5
-      md5: 0477b1281150c0fc96d7aaedb83b236f
-      size: 4280
+      md5: 0649261fd08aa7fa5f1b5c24470288e7
+      size: 4308
     outs:
     - path: models/promotion.done
       hash: md5

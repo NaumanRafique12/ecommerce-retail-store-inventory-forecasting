@@ -16,6 +16,7 @@ stages:
       - config/config.yaml
     outs:
       - data/processed/processed.csv
+      - models/scaler.joblib
 
   train:
     cmd: python src/stages/model_training.py
