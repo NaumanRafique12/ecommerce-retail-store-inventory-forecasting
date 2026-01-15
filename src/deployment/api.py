@@ -7,6 +7,9 @@ import sys
 import dagshub
 import uvicorn
 import joblib
+import time
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from fastapi import Response
 from contextlib import asynccontextmanager
 
 # Add project root to path for local imports
@@ -18,6 +21,25 @@ from src.models.forecaster import generate_multi_horizon_forecast
 MODEL = None
 SCALER = None
 MODEL_NAME = "Ecom_Demand_Forecast_WAPE_Model"
+
+# --- Prometheus Metrics ---
+FORECAST_REQUESTS = Counter(
+    "forecast_requests_total", 
+    "Total number of forecast requests",
+    ["status", "horizon"]
+)
+
+FORECAST_LATENCY = Histogram(
+    "forecast_latency_seconds",
+    "Time taken to generate forecast",
+    buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+)
+
+FORECAST_UNITS = Counter(
+    "forecast_units_total",
+    "Cumulative count of units forecasted"
+)
+# -------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,6 +92,10 @@ def health_check():
         "scaler": "loaded" if SCALER else "missing"
     }
 
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 @app.get("/predict")
 def predict_forecast(horizon: int = 7):
     """
@@ -111,6 +137,11 @@ def predict_forecast(horizon: int = 7):
     last_date = pd.to_datetime(df.index[-1])
     forecast_dates = [(last_date + pd.Timedelta(days=i+1)).strftime('%Y-%m-%d') for i in range(len(final_forecasts))]
     
+    # Update metrics
+    prediction_sum = sum([int(round(float(p))) for p in final_forecasts])
+    FORECAST_UNITS.inc(prediction_sum)
+    FORECAST_REQUESTS.labels(status="success", horizon=str(horizon)).inc()
+    
     response = {
         "model_version": "Active",
         "horizon_days": horizon,
@@ -118,6 +149,18 @@ def predict_forecast(horizon: int = 7):
     }
     
     return response
+
+@app.middleware("http")
+async def add_process_time_header(request, call_next):
+    if request.url.path == "/predict":
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        FORECAST_LATENCY.observe(process_time)
+        if response.status_code != 200:
+             FORECAST_REQUESTS.labels(status="error", horizon="unknown").inc()
+        return response
+    return await call_next(request)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
