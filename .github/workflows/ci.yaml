@@ -110,10 +110,10 @@ jobs:
             aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws configure set default.region eu-north-1
             aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 490004640299.dkr.ecr.eu-north-1.amazonaws.com
-            docker system prune -af --volumes
-            docker pull 490004640299.dkr.ecr.eu-north-1.amazonaws.com/ecommerce_ecr:latest
             docker stop ecommerce_ecr || true
             docker rm ecommerce_ecr || true
+            docker system prune -af --volumes
+            docker pull 490004640299.dkr.ecr.eu-north-1.amazonaws.com/ecommerce_ecr:latest
             docker run -d -p 8501:8501 -p 8000:8000 --env DAGSHUB_PAT="${{ secrets.ABARK_MLOPS }}" --name ecommerce_ecr --restart always 490004640299.dkr.ecr.eu-north-1.amazonaws.com/ecommerce_ecr:latest
 
     
