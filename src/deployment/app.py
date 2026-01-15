@@ -7,7 +7,7 @@ import os
 # Page Config
 st.set_page_config(page_title="Demand Forecast Analytics", layout="wide")
 
-st.title("📦 E-Commerce Demand Forecasting Dashboard.")
+st.title("📦 E-Commerce Demand Forecasting Dashboard Monitoring")
 st.markdown("Interactive forecasting tool for product inventory management.")
 
 # Sidebar Controls
